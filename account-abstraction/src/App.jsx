@@ -563,6 +563,22 @@ function App() {
     return Promise.resolve(code.length > 2);
   }
 
+  const eip1559GasPrice = async (provider) => {
+    const [fee, block] = await Promise.all([
+      provider.send("eth_maxPriorityFeePerGas", []),
+      provider.getBlock("latest"),
+    ]);
+
+    const tip = ethers.BigNumber.from(fee);
+    const buffer = tip.div(100).mul(13);
+    const maxPriorityFeePerGas = tip.add(buffer);
+    const maxFeePerGas = block.baseFeePerGas
+      ? block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
+      : maxPriorityFeePerGas;
+
+    return { maxFeePerGas, maxPriorityFeePerGas };
+  };
+
   const signUserOp = async (request) => {
     if (!provider) {
       getProvider();
@@ -638,42 +654,58 @@ function App() {
 
     const initTransaction = await AccountFactoryContract.populateTransaction.createAccount(currentAccount, 0);
 
+    const gasProvider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/node/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659');
+
+    const { maxFeePerGas, maxPriorityFeePerGas } = await eip1559GasPrice(gasProvider);
+
     const userOp = {
-      preVerificationGas: 2100000,
-      maxFeePerGas: 2100000,
-      maxPriorityFeePerGas: 2100000,
-      paymasterAndData: '0x9406Cc6185a346906296840746125a0E44976454',
-      signature: '0x',
-      sender: currentAccount,
+      preVerificationGas: 49300,
+      maxFeePerGas: hexlify(maxFeePerGas),
+      maxPriorityFeePerGas: hexlify(maxPriorityFeePerGas),
+      paymasterAndData: "0xe93eca6595fe94091dc1af46aac2a8b5d7990770000000000000000000000000000000000000000000000000000000006462b08b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c61b764f261bda431a9dca8730714d6ff5b762bea9902cd73269a80340f759a1734ace51b7a46ac20c4bf9e38382dab25135df741a7a4d7dc1d8e50b8a0fd561c",
+      signature: "0x6a2a6ff75cb0482f22589dbd10b3017820b29d09e71da3d0243b75649f24b9a57873e686e1f33a707b330ca66ca89db5dbe6a8f9688960bcde76f34fb9ac4ae31b",
+      sender: currentSafe,
       nonce,
-      callGasLimit: 2100000,
+      callGasLimit: 135624,
       callData,
-      initCode: ACCOUNT_FACTORY_CONTRACT + initTransaction.data?.replace("0x", ""),
-      verificationGasLimit: 2100000,
+      initCode: '0xb3c11c903e46af0437bad5e2cc18c91bf997c5485fbfb9cf0000000000000000000000007cc7c398fcabfacd206a73a63494a9cd50e266970000000000000000000000000000000000000000000000000000000000000000',
+      verificationGasLimit: 1500000,
     };
+
+    // const paymasterProvider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/paymaster/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659');
+
+    // const pm = await paymasterProvider.send("pm_sponsorUserOperation", [
+    //   userOp,
+    //   ENTRYPOINT_CONTRACT,
+    //   {
+    //     "type": "payg"
+    //   }
+    // ]);
 
     const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
     userOp.signature = await safeOwner.signMessage(ethers.utils.arrayify(userOpHash));
 
+    // userOp.paymasterAndData = pm.paymasterAndData;
+    // userOp.preVerificationGas = pm.preVerificationGas;
+    // userOp.verificationGasLimit = pm.verificationGasLimit;
+    // userOp.callGasLimit = pm.callGasLimit;
+
     return userOp;
   };
 
   const sendUserOp = async (userOp) => {
-    if (!provider) {
-      getProvider();
-    }
+    const provider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/node/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659');
 
-    const safeOwner = provider.getSigner();
-    
-    const EntrypointContract = new Contract(
-      ENTRYPOINT_CONTRACT,
-      new Interface(ENTRYPOINT_ABI),
-      safeOwner,
-    );
+    const opsTransaction = await provider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
 
-    // const opsTransaction = await EntrypointContract.handleOps([userOp], '0x9406Cc6185a346906296840746125a0E44976454');
-    const opsTransaction = await EntrypointContract.simulateValidation([userOp]);
+    // const EntrypointContract = new Contract(
+    //   ENTRYPOINT_CONTRACT,
+    //   new Interface(ENTRYPOINT_ABI),
+    //   provider,
+    // );
+
+    // const opsTransaction = await EntrypointContract.handleOps([userOp], currentAccount);
     const result = await opsTransaction.wait();
 
     if (result && result.error && result.error.message) {
@@ -733,7 +765,7 @@ function App() {
       return iface1155.encodeFunctionData('safeTransferFrom', [
         address,
         recipient,
-        balance.token.id,
+        balance.id,
         quantity,
         '0x',
       ]);
@@ -745,7 +777,7 @@ function App() {
       from: currentSafe,
       to: nft.contractAddress,
       data: erc1155TxnData,
-      value: 0,
+      value: '0x00',
     });
   };
 
@@ -782,7 +814,7 @@ function App() {
       to: currency.contractAddress,
       from: currentSafe,
       data: buildTransactionData(),
-      value: 0,
+      value: '0x00',
     });
   };
 
@@ -819,8 +851,8 @@ function App() {
           {currentAccount ? 'Disconnect' : 'Sign In With Bitski'}
         </button>
 
-        <div class="flex flex-col w-full lg:flex-row">
-          <div class="grid flex-grow card bg-base-300 rounded-box p-4 max-w-xl">
+        <div className="flex flex-col w-full lg:flex-row">
+          <div className="grid flex-grow card bg-base-300 rounded-box p-4 max-w-xl">
             {currentAccount ? (
               <div className="break-all">
                 <p className="">Bitski Vault</p>
@@ -831,8 +863,8 @@ function App() {
               'Not logged in.'
             )}
           </div> 
-          <div class="divider lg:divider-horizontal"></div> 
-          <div class="grid flex-grow card bg-base-300 rounded-box p-4 max-w-xl">
+          <div className="divider lg:divider-horizontal"></div> 
+          <div className="grid flex-grow card bg-base-300 rounded-box p-4 max-w-xl">
             {currentSafe ? (
               <div className="break-all">
                 <p className="">Safe {!!isDeployed(currentSafe) ? '(ACTIVE)' : '(INACTIVE)'}</p>
@@ -844,7 +876,7 @@ function App() {
             {currentSafe && !sendNftHash ? (
               <button
                 className="my-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
-                onClick={() => sendNftToVault()}
+                onClick={() => sendNftToVault(getNft(safeNftBalance))}
               >
                 Send NFT to Vault
               </button>
