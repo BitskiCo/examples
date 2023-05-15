@@ -6,6 +6,7 @@ import Safe from '@safe-global/protocol-kit';
 import { Contract } from '@ethersproject/contracts';
 import { Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
+import { hexlify } from '@ethersproject/bytes';
 
 const FALLBACK_CONTRACT = '0x0FC7c07622De076007fBCB3652B4C1bAb748456F';
 const MANAGER_CONTRACT = '0x767Dd20D76eE07dc53b176fB407709ACb5d7d529';
@@ -16,30 +17,61 @@ const FALLBACK_ABI = [
   {
     inputs: [
       {
-        internalType: 'address',
-        name: 'to',
-        type: 'address',
+        internalType: "address",
+        name: "",
+        type: "address",
       },
       {
-        internalType: 'uint256',
-        name: 'value',
-        type: 'uint256',
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
       },
       {
-        internalType: 'bytes',
-        name: 'data',
-        type: 'bytes',
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
       },
       {
-        internalType: 'enum Enum.Operation',
-        name: 'operation',
-        type: 'uint8',
+        internalType: "enum Enum.Operation",
+        name: "",
+        type: "uint8",
       },
     ],
-    name: 'executeAndRevert',
+    name: "executeAndRevert",
     outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
+const MANAGER_ABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "data",
+        type: "bytes",
+      },
+      {
+        internalType: "enum Enum.Operation",
+        name: "operation",
+        type: "uint8",
+      },
+    ],
+    name: "executeAndRevert",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
 ];
 
@@ -144,6 +176,151 @@ const ENTRYPOINT_ABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "sender",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes",
+            name: "initCode",
+            type: "bytes",
+          },
+          {
+            internalType: "bytes",
+            name: "callData",
+            type: "bytes",
+          },
+          {
+            internalType: "uint256",
+            name: "callGasLimit",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "verificationGasLimit",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "preVerificationGas",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "maxFeePerGas",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "maxPriorityFeePerGas",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes",
+            name: "paymasterAndData",
+            type: "bytes",
+          },
+          {
+            internalType: "bytes",
+            name: "signature",
+            type: "bytes",
+          },
+        ],
+        internalType: "struct UserOperation[]",
+        name: "ops",
+        type: "tuple[]",
+      },
+      {
+        internalType: "address payable",
+        name: "beneficiary",
+        type: "address",
+      },
+    ],
+    name: "handleOps",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "sender",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes",
+            name: "initCode",
+            type: "bytes",
+          },
+          {
+            internalType: "bytes",
+            name: "callData",
+            type: "bytes",
+          },
+          {
+            internalType: "uint256",
+            name: "callGasLimit",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "verificationGasLimit",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "preVerificationGas",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "maxFeePerGas",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "maxPriorityFeePerGas",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes",
+            name: "paymasterAndData",
+            type: "bytes",
+          },
+          {
+            internalType: "bytes",
+            name: "signature",
+            type: "bytes",
+          },
+        ],
+        internalType: "struct UserOperation",
+        name: "userOp",
+        type: "tuple",
+      },
+    ],
+    name: "simulateValidation",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
 const ACCOUNT_FACTORY_ABI = [
@@ -170,7 +347,31 @@ const ACCOUNT_FACTORY_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
-  }
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "salt",
+        type: "uint256",
+      },
+    ],
+    name: "createAccount",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
 const bitski = new Bitski(
@@ -186,7 +387,6 @@ function App() {
   const [accountNftBalance, setAccountNftBalance] = useState(null);
   const [safeNftBalance, setSafeNftBalance] = useState(null);
   const [provider, setProvider] = useState(null);
-  const [hash, setHash] = useState(null);
   const [sendNftHash, setNftHash] = useState(null);
   const [sendTokenHash, setTokenHash] = useState(null);
   const [error, setError] = useState(null);
@@ -201,8 +401,8 @@ function App() {
     const web3 = new ethers.providers.Web3Provider(
       bitski.getProvider({
         network: {
-          rpcUrl: "https://api.bitski.com/v1/web3/137",
-          chainId: 137,
+          rpcUrl: "https://api.stackup.sh/v1/node/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659",
+          chainId: 5,
         },
       })
     );
@@ -233,7 +433,7 @@ function App() {
     const defaultBalance = {
       balances: [{
         balance: "0",
-        chainId: 137,
+        chainId: 5,
         coinType: 60,
         contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
@@ -250,8 +450,8 @@ function App() {
       return;
     }
 
-    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=137`);
-    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=137`);
+    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=5`);
+    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=5`);
 
     if (currentAccountBalanceResponse.ok && safeAccountBalanceResponse.ok) {
       const currentAccountBalanceData = await currentAccountBalanceResponse.json();
@@ -269,7 +469,7 @@ function App() {
     const defaultBalance = {
       balances: [{
         balance: "0",
-        chainId: 137,
+        chainId: 5,
         coinType: 60,
         contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
@@ -286,8 +486,8 @@ function App() {
       return;
     }
 
-    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=137&nfts=true`);
-    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=137&nfts=true`);
+    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=5&nfts=true`);
+    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=5&nfts=true`);
 
     if (currentAccountBalanceResponse.ok && safeAccountBalanceResponse.ok) {
       const currentAccountBalanceData = await currentAccountBalanceResponse.json();
@@ -351,21 +551,7 @@ function App() {
     await bitski.signOut();
     setAccount(null);
     setSafe(null);
-    setHash(null);
     setError(null);
-  };
-
-  const signMessage = async () => {
-    if (!provider) {
-      getProvider();
-    }
-
-    const transactionHash = await provider.send('eth_sign', [
-      currentAccount,
-      'This is a test message you are signing.',
-    ]);
-
-    setHash(transactionHash);
   };
 
   const isDeployed = async (address) => {
@@ -374,13 +560,15 @@ function App() {
     }
     
     const code = await provider.getCode(address)
-    return code.length > 2
+    return Promise.resolve(code.length > 2);
   }
 
   const signUserOp = async (request) => {
     if (!provider) {
       getProvider();
     }
+
+    const safeOwner = provider.getSigner();
 
     // 1. convert request payload to safe transaction
     // 2. get safe transaction
@@ -394,22 +582,38 @@ function App() {
     const ERC4337FallbackContract = new Contract(
       FALLBACK_CONTRACT,
       new Interface(FALLBACK_ABI),
-      provider,
+      safeOwner,
+    );
+
+    const ERC4337ManagerContract = new Contract(
+      MANAGER_CONTRACT,
+      new Interface(MANAGER_ABI),
+      safeOwner,
     );
 
     const EntrypointContract = new Contract(
       ENTRYPOINT_CONTRACT,
       new Interface(ENTRYPOINT_ABI),
-      provider,
+      safeOwner,
     );
 
-    const safeOwner = provider.getSigner();
+    const AccountFactoryContract = new Contract(ACCOUNT_FACTORY_CONTRACT, new Interface(ACCOUNT_FACTORY_ABI), safeOwner);
+
     const ethAdapter = new EthersAdapter({
       ethers,
       signerOrProvider: safeOwner,
     });
 
-    const safeSdk = await Safe.create({ ethAdapter, safeAddress: currentAccount });
+    const predictedSafe = {
+      safeAccountConfig: {
+
+      },
+      safeDeploymentConfig: {
+        safeVersion: '1.3.0',
+      }
+    };
+
+    const safeSdk = await Safe.create({ ethAdapter, predictedSafe });
 
     const safeTransactionData = {
       to: request.to,
@@ -422,7 +626,7 @@ function App() {
     });
 
     const callData = (
-      await ERC4337FallbackContract.populateTransaction.executeAndRevert(
+      await ERC4337ManagerContract.populateTransaction.executeAndRevert(
         safeTransaction.data.to,
         safeTransaction.data.value,
         safeTransaction.data.data,
@@ -430,9 +634,9 @@ function App() {
       )
     ).data;
 
-    const nonce = await EntrypointContract.getNonce(currentAccount, 0);
+    const nonce = hexlify(await EntrypointContract.getNonce(currentSafe, 0));
 
-    const initTransaction = await accountFactory.populateTransaction.createAccount(accounts, salt);
+    const initTransaction = await AccountFactoryContract.populateTransaction.createAccount(currentAccount, 0);
 
     const userOp = {
       preVerificationGas: 2100000,
@@ -448,7 +652,7 @@ function App() {
       verificationGasLimit: 2100000,
     };
 
-    const userOpHash = EntrypointContract.getUserOpHash(userOp);
+    const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
     userOp.signature = await safeOwner.signMessage(ethers.utils.arrayify(userOpHash));
 
@@ -456,7 +660,21 @@ function App() {
   };
 
   const sendUserOp = async (userOp) => {
-    const result = await provider.send('eth_sendUserOperation', [userOp]);
+    if (!provider) {
+      getProvider();
+    }
+
+    const safeOwner = provider.getSigner();
+    
+    const EntrypointContract = new Contract(
+      ENTRYPOINT_CONTRACT,
+      new Interface(ENTRYPOINT_ABI),
+      safeOwner,
+    );
+
+    // const opsTransaction = await EntrypointContract.handleOps([userOp], '0x9406Cc6185a346906296840746125a0E44976454');
+    const opsTransaction = await EntrypointContract.simulateValidation([userOp]);
+    const result = await opsTransaction.wait();
 
     if (result && result.error && result.error.message) {
       throw new Error(result.error.message);
@@ -617,7 +835,7 @@ function App() {
           <div class="grid flex-grow card bg-base-300 rounded-box p-4 max-w-xl">
             {currentSafe ? (
               <div className="break-all">
-                <p className="">Safe {isDeployed(currentSafe) ? '(ACTIVE)' : '(INACTIVE)'}</p>
+                <p className="">Safe {!!isDeployed(currentSafe) ? '(ACTIVE)' : '(INACTIVE)'}</p>
                 <p className="mt-2 font-bold">{currentSafe}</p>
                 {safeCurrencyBalance && <p className="mt-2 font-bold">Balance: {getEthBalance(safeCurrencyBalance)} ETH</p>}
               </div>
