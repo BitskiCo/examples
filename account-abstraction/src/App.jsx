@@ -8,10 +8,10 @@ import { Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 
-const FALLBACK_CONTRACT = '0x0FC7c07622De076007fBCB3652B4C1bAb748456F';
-const MANAGER_CONTRACT = '0x767Dd20D76eE07dc53b176fB407709ACb5d7d529';
+const FALLBACK_CONTRACT = '0x2a0013FFf210316315430a2124F683679d9029B2';
+const MANAGER_CONTRACT = '0x34D26E0E757931421Ba120B05269DC475901FFc9';
 const ENTRYPOINT_CONTRACT = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
-const ACCOUNT_FACTORY_CONTRACT = '0xB3C11c903e46af0437Bad5e2cC18c91BF997C548';
+const ACCOUNT_FACTORY_CONTRACT = '0xe7d07E7A3b39BA605B71b026cf50d4b044249436';
 
 const FALLBACK_ABI = [
   {
@@ -374,10 +374,18 @@ const ACCOUNT_FACTORY_ABI = [
   },
 ];
 
+const CHAIN_ID = 80001;
+const BUNDLER_RPC = "https://polygon-mumbai.g.alchemy.com/v2/C2-OfbqsQLjG2pRlnJ0uHDqoj07NHwPs";
+
+const ERC_20_CONTRACT_ADDRESS = '0xfe4F5145f6e09952a5ba9e956ED0C25e3Fa4c7F1';
+const ERC_1155_CONTRACT_ADDRESS = '0xA07e45A987F19E25176c877d98388878622623FA';
+
 const bitski = new Bitski(
   '1812bcfa-44ab-48e3-87b2-b06de6c8e89d',
   'http://localhost:5173/callback.html',
 );
+
+const alchemyProvider = new ethers.providers.JsonRpcProvider(BUNDLER_RPC);
 
 function App() {
   const [currentAccount, setAccount] = useState(null);
@@ -396,13 +404,13 @@ function App() {
   });
 
   const getProvider = async () => {
-    if (provider) return;
+    if (provider && provider?._network?.chainId !== CHAIN_ID) return;
 
     const web3 = new ethers.providers.Web3Provider(
       bitski.getProvider({
         network: {
-          rpcUrl: "https://api.stackup.sh/v1/node/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659",
-          chainId: 5,
+          rpcUrl: `https://api.bitski.com/v1/web3/${CHAIN_ID}`,
+          chainId: CHAIN_ID,
         },
       })
     );
@@ -433,7 +441,7 @@ function App() {
     const defaultBalance = {
       balances: [{
         balance: "0",
-        chainId: 5,
+        chainId: CHAIN_ID,
         coinType: 60,
         contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
@@ -450,8 +458,8 @@ function App() {
       return;
     }
 
-    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=5`);
-    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=5`);
+    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=${CHAIN_ID}`);
+    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=${CHAIN_ID}`);
 
     if (currentAccountBalanceResponse.ok && safeAccountBalanceResponse.ok) {
       const currentAccountBalanceData = await currentAccountBalanceResponse.json();
@@ -469,7 +477,7 @@ function App() {
     const defaultBalance = {
       balances: [{
         balance: "0",
-        chainId: 5,
+        chainId: CHAIN_ID,
         coinType: 60,
         contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
@@ -486,8 +494,8 @@ function App() {
       return;
     }
 
-    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=5&nfts=true`);
-    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=5&nfts=true`);
+    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=${CHAIN_ID}&nfts=true`);
+    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=${CHAIN_ID}&nfts=true`);
 
     if (currentAccountBalanceResponse.ok && safeAccountBalanceResponse.ok) {
       const currentAccountBalanceData = await currentAccountBalanceResponse.json();
@@ -502,11 +510,11 @@ function App() {
   };
 
   const getNft = (balances) => {
-    return getBalanceForContractAddress(balances, '0x2e3ef7931f2d0e4a7da3dea950ff3f19269d9063');
+    return getBalanceForContractAddress(balances, ERC_1155_CONTRACT_ADDRESS);
   }
 
   const getErc20 = (balances) => {
-    return getBalanceForContractAddress(balances, '0x3f152b63ec5ca5831061b2dccfb29a874c317502');
+    return getBalanceForContractAddress(balances, ERC_20_CONTRACT_ADDRESS);
   }
 
   const getEthBalance = (balances) => {
@@ -520,7 +528,7 @@ function App() {
   const connect = async () => {
     setError(null);
 
-    if (!provider) {
+    if (!provider || provider?._network?.chainId !== CHAIN_ID) {
       getProvider();
     }
 
@@ -560,23 +568,13 @@ function App() {
     }
     
     const code = await provider.getCode(address)
-    return Promise.resolve(code.length > 2);
+    return code.length > 2;
   }
 
-  const eip1559GasPrice = async (provider) => {
-    const [fee, block] = await Promise.all([
-      provider.send("eth_maxPriorityFeePerGas", []),
-      provider.getBlock("latest"),
-    ]);
+  const estimateUserOpGas = async (userOp) => {
+    const gasData = await alchemyProvider.send('eth_estimateUserOperationGas', [userOp, ENTRYPOINT_CONTRACT]);
 
-    const tip = ethers.BigNumber.from(fee);
-    const buffer = tip.div(100).mul(13);
-    const maxPriorityFeePerGas = tip.add(buffer);
-    const maxFeePerGas = block.baseFeePerGas
-      ? block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
-      : maxPriorityFeePerGas;
-
-    return { maxFeePerGas, maxPriorityFeePerGas };
+    return gasData;
   };
 
   const signUserOp = async (request) => {
@@ -652,60 +650,39 @@ function App() {
 
     const nonce = hexlify(await EntrypointContract.getNonce(currentSafe, 0));
 
-    const initTransaction = await AccountFactoryContract.populateTransaction.createAccount(currentAccount, 0);
-
-    const gasProvider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/node/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659');
-
-    const { maxFeePerGas, maxPriorityFeePerGas } = await eip1559GasPrice(gasProvider);
+    const initTransaction = await AccountFactoryContract.populateTransaction.createAccount(currentAccount, BigNumber.from(0));
 
     const userOp = {
-      preVerificationGas: 49300,
-      maxFeePerGas: hexlify(maxFeePerGas),
-      maxPriorityFeePerGas: hexlify(maxPriorityFeePerGas),
-      paymasterAndData: "0xe93eca6595fe94091dc1af46aac2a8b5d7990770000000000000000000000000000000000000000000000000000000006462b08b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c61b764f261bda431a9dca8730714d6ff5b762bea9902cd73269a80340f759a1734ace51b7a46ac20c4bf9e38382dab25135df741a7a4d7dc1d8e50b8a0fd561c",
-      signature: "0x6a2a6ff75cb0482f22589dbd10b3017820b29d09e71da3d0243b75649f24b9a57873e686e1f33a707b330ca66ca89db5dbe6a8f9688960bcde76f34fb9ac4ae31b",
       sender: currentSafe,
       nonce,
-      callGasLimit: 135624,
       callData,
-      initCode: '0xb3c11c903e46af0437bad5e2cc18c91bf997c5485fbfb9cf0000000000000000000000007cc7c398fcabfacd206a73a63494a9cd50e266970000000000000000000000000000000000000000000000000000000000000000',
-      verificationGasLimit: 1500000,
+      initCode: ACCOUNT_FACTORY_CONTRACT + initTransaction.data?.replace("0x", ""),
+      signature: '0x',
+      callGasLimit: "0x238c",
+      verificationGasLimit: "0x1",
+      preVerificationGas: "0xea60",
+      maxFeePerGas: '0xeec17f39',
+      maxPriorityFeePerGas: "0x5f5e100",
+      paymasterAndData: currentSafe,
     };
-
-    // const paymasterProvider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/paymaster/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659');
-
-    // const pm = await paymasterProvider.send("pm_sponsorUserOperation", [
-    //   userOp,
-    //   ENTRYPOINT_CONTRACT,
-    //   {
-    //     "type": "payg"
-    //   }
-    // ]);
 
     const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
     userOp.signature = await safeOwner.signMessage(ethers.utils.arrayify(userOpHash));
+    
+    // const paymasterTransaction = await alchemyProvider.send('alchemy_requestPaymasterAndData', [{
+    //   policyId: '43ee9d32-f26f-482f-9602-5766f2b66196',
+    //   entryPoint: ENTRYPOINT_CONTRACT,
+    //   userOperation: userOp
+    // }]);
 
-    // userOp.paymasterAndData = pm.paymasterAndData;
-    // userOp.preVerificationGas = pm.preVerificationGas;
-    // userOp.verificationGasLimit = pm.verificationGasLimit;
-    // userOp.callGasLimit = pm.callGasLimit;
+    // userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
 
     return userOp;
   };
 
   const sendUserOp = async (userOp) => {
-    const provider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/node/08ab8e470fd139102cb5cc813ad3989e82d5b6831cef278a757cc53f1443a659');
-
-    const opsTransaction = await provider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
-
-    // const EntrypointContract = new Contract(
-    //   ENTRYPOINT_CONTRACT,
-    //   new Interface(ENTRYPOINT_ABI),
-    //   provider,
-    // );
-
-    // const opsTransaction = await EntrypointContract.handleOps([userOp], currentAccount);
+    const opsTransaction = await alchemyProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
     const result = await opsTransaction.wait();
 
     if (result && result.error && result.error.message) {
@@ -719,6 +696,18 @@ function App() {
 
   const request = async (request) => {
     const userOp = await signUserOp(request);
+
+    delete userOp.verificationGasLimit;
+    delete userOp.callGasLimit;
+    delete userOp.preVerificationGas;
+
+    const gasData = await estimateUserOpGas(userOp);
+
+    // delete userOp.paymasterAndData;
+    userOp.verificationGasLimit = gasData.verificationGasLimit;
+    userOp.callGasLimit = gasData.callGasLimit;
+    userOp.preVerificationGas = gasData.preVerificationGas;
+    
     const result = await sendUserOp(userOp);
 
     return result;
@@ -775,9 +764,9 @@ function App() {
 
     request({
       from: currentSafe,
-      to: nft.contractAddress,
+      to: ERC_1155_CONTRACT_ADDRESS,
       data: erc1155TxnData,
-      value: '0x00',
+      value: '0x0',
     });
   };
 
@@ -809,13 +798,15 @@ function App() {
       // send 0.01 value of token
       return iface.encodeFunctionData('transfer', [currentAccount, BigNumber.from('10000000000000000')]);
     };
-    
-    request({
-      to: currency.contractAddress,
+
+    const requestData = {
+      to: ERC_20_CONTRACT_ADDRESS,
       from: currentSafe,
       data: buildTransactionData(),
-      value: '0x00',
-    });
+      value: '0x0',
+    }
+    
+    request(requestData);
   };
 
   return (
