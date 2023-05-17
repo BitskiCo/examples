@@ -11,7 +11,12 @@ import { hexlify } from "@ethersproject/bytes";
 const FALLBACK_CONTRACT = "0x2a0013FFf210316315430a2124F683679d9029B2";
 const MANAGER_CONTRACT = "0x34D26E0E757931421Ba120B05269DC475901FFc9";
 const ENTRYPOINT_CONTRACT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+
+// MUMBAI
 const ACCOUNT_FACTORY_CONTRACT = "0xbd4e2Df9bCc23F6Ff337Bb5C1056Fb468349B582";
+
+// GOERLI
+// const ACCOUNT_FACTORY_CONTRACT = "0xe7d07E7A3b39BA605B71b026cf50d4b044249436";
 
 const FALLBACK_ABI = [
   {
@@ -387,6 +392,7 @@ const bitski = new Bitski(
 );
 
 const alchemyProvider = new ethers.providers.JsonRpcProvider(BUNDLER_RPC);
+
 const stackupBundlerProvider = new ethers.providers.JsonRpcProvider(
   "https://api.stackup.sh/v1/node/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
 );
@@ -701,17 +707,14 @@ function SafeExample({ goBack }) {
     //   BigNumber.from(0)
     // );
 
-    const { maxFeePerGas, maxPriorityFeePerGas } =
-      await alchemyProvider.getFeeData();
-
     const userOp = {
       sender: currentSafe,
       nonce,
       initCode: "0x",
       callData,
-      // callGasLimit: "0x",
-      // verificationGasLimit: "0x",
-      // preVerificationGas: "0x",
+      callGasLimit: "0xecd0",
+      verificationGasLimit: "0xecd0",
+      preVerificationGas: "0xecd0",
       paymasterAndData: "0x",
       signature:
         "0xaecc72634f6c02bc10ec820d21f6ae77cfa16f970b9ae2172133c4f445db47e559a347766e448f5ded21ce41fc2ca92490ee32db75df7508309c65604f4a73af1b",
@@ -719,18 +722,43 @@ function SafeExample({ goBack }) {
 
     const gasData = await estimateUserOpGas(userOp);
 
+    // Alchemy
     userOp.verificationGasLimit = hexlify(
-      BigNumber.from(gasData.verificationGasLimit).add(BigNumber.from(8000))
+      BigNumber.from(gasData.verificationGasLimit).mul(2)
     );
     userOp.preVerificationGas = hexlify(
-      BigNumber.from(gasData.preVerificationGas).add(BigNumber.from(8000))
+      BigNumber.from(gasData.preVerificationGas).mul(2)
     );
-    userOp.callGasLimit = hexlify(
-      BigNumber.from(gasData.callGasLimit).add(BigNumber.from(8000))
-    );
+    userOp.callGasLimit = hexlify(BigNumber.from(gasData.callGasLimit).mul(2));
+
+    const { maxFeePerGas, maxPriorityFeePerGas } =
+      await alchemyProvider.getFeeData();
 
     userOp.maxFeePerGas = hexlify(maxFeePerGas);
     userOp.maxPriorityFeePerGas = hexlify(maxPriorityFeePerGas);
+
+    const paymasterTransaction = await alchemyProvider.send(
+      "alchemy_requestPaymasterAndData",
+      [
+        {
+          policyId: "43ee9d32-f26f-482f-9602-5766f2b66196",
+          entryPoint: ENTRYPOINT_CONTRACT,
+          userOperation: userOp,
+        },
+      ]
+    );
+
+    userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
+
+    // // Stackup
+    // userOp.verificationGasLimit = gasData.verificationGas;
+    // userOp.preVerificationGas = gasData.preVerificationGas;
+    // userOp.callGasLimit = gasData.callGasLimit;
+
+    // const paymasterTransaction = await stackupPaymasterProvider.send(
+    //   "pm_sponsorUserOperation",
+    //   [userOp, ENTRYPOINT_CONTRACT, { type: "payg" }]
+    // );
 
     const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
