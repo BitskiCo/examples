@@ -386,6 +386,8 @@ const bitski = new Bitski(
 );
 
 const alchemyProvider = new ethers.providers.JsonRpcProvider(BUNDLER_RPC);
+const stackupBundlerProvider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/node/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925');
+const stackupPaymasterProvider = new ethers.providers.JsonRpcProvider('https://api.stackup.sh/v1/paymaster/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925');
 
 function App() {
   const [currentAccount, setAccount] = useState(null);
@@ -395,6 +397,7 @@ function App() {
   const [accountNftBalance, setAccountNftBalance] = useState(null);
   const [safeNftBalance, setSafeNftBalance] = useState(null);
   const [provider, setProvider] = useState(null);
+  const [signMessageHash, setSignMessageHash] = useState(null);
   const [sendNftHash, setNftHash] = useState(null);
   const [sendTokenHash, setTokenHash] = useState(null);
   const [error, setError] = useState(null);
@@ -572,6 +575,7 @@ function App() {
   }
 
   const estimateUserOpGas = async (userOp) => {
+    // const gasData = await stackupBundlerProvider.send('eth_estimateUserOperationGas', [userOp, ENTRYPOINT_CONTRACT]);
     const gasData = await alchemyProvider.send('eth_estimateUserOperationGas', [userOp, ENTRYPOINT_CONTRACT]);
 
     return gasData;
@@ -670,18 +674,24 @@ function App() {
 
     userOp.signature = await safeOwner.signMessage(ethers.utils.arrayify(userOpHash));
     
-    // const paymasterTransaction = await alchemyProvider.send('alchemy_requestPaymasterAndData', [{
-    //   policyId: '43ee9d32-f26f-482f-9602-5766f2b66196',
-    //   entryPoint: ENTRYPOINT_CONTRACT,
-    //   userOperation: userOp
-    // }]);
+    const paymasterTransaction = await alchemyProvider.send('alchemy_requestPaymasterAndData', [{
+      policyId: '43ee9d32-f26f-482f-9602-5766f2b66196',
+      entryPoint: ENTRYPOINT_CONTRACT,
+      userOperation: userOp
+    }]);
 
-    // userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
+    // const paymasterTransaction = await stackupPaymasterProvider.send('pm_sponsorUserOperation', [userOp, ENTRYPOINT_CONTRACT, { type: "payg" }]);
+
+    userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
+    // userOp.callGasLimit = paymasterTransaction.callGasLimit;
+    // userOp.preVerificationGas = paymasterTransaction.preVerificationGas;
+    // userOp.verificationGasLimit = paymasterTransaction.verificationGasLimit;
 
     return userOp;
   };
 
   const sendUserOp = async (userOp) => {
+    // const opsTransaction = await stackupBundlerProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
     const opsTransaction = await alchemyProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
     const result = await opsTransaction.wait();
 
@@ -712,6 +722,15 @@ function App() {
 
     return result;
   };
+
+  const signMessageWithSafe = async (message) => {
+    request({
+      from: currentSafe,
+      to: currentAccount,
+      data: '0x5468697320697320612074657374206d657373616765',
+      value: '0x0',
+    });
+  }
 
   const sendNftToVault = (nft) => {
     const iface1155 = new Interface([
@@ -863,6 +882,14 @@ function App() {
                 {safeCurrencyBalance && <p className="mt-2 font-bold">Balance: {getEthBalance(safeCurrencyBalance)} ETH</p>}
               </div>
             ) : 'Not logged in.'}
+            {currentSafe && !signMessageHash ? (
+              <button
+                className="mt-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
+                onClick={() => signMessageWithSafe('This is a test message')}
+              >
+                Sign Message w/ Safe
+              </button>
+            ) : null}
             {currentSafe && safeNftBalance ? <p className="mt-2 font-bold break-all">NFT: {JSON.stringify(getNft(safeNftBalance))}</p> : null}
             {currentSafe && !sendNftHash ? (
               <button
