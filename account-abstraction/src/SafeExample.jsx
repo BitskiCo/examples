@@ -1,18 +1,17 @@
-<<<<<<< Updated upstream
-import React, { useState, useEffect } from 'react';
-import { Bitski, AuthenticationStatus } from 'bitski';
-import { ethers } from 'ethers';
-import { EthersAdapter } from '@safe-global/protocol-kit';
-import Safe from '@safe-global/protocol-kit';
-import { Contract } from '@ethersproject/contracts';
-import { Interface } from '@ethersproject/abi';
-import { BigNumber } from '@ethersproject/bignumber';
-import { hexlify } from '@ethersproject/bytes';
+import React, { useState, useEffect } from "react";
+import { Bitski, AuthenticationStatus } from "bitski";
+import { ethers } from "ethers";
+import { EthersAdapter } from "@safe-global/protocol-kit";
+import Safe from "@safe-global/protocol-kit";
+import { Contract } from "@ethersproject/contracts";
+import { Interface } from "@ethersproject/abi";
+import { BigNumber } from "@ethersproject/bignumber";
+import { hexlify } from "@ethersproject/bytes";
 
-const FALLBACK_CONTRACT = '0x2a0013FFf210316315430a2124F683679d9029B2';
-const MANAGER_CONTRACT = '0x34D26E0E757931421Ba120B05269DC475901FFc9';
-const ENTRYPOINT_CONTRACT = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
-const ACCOUNT_FACTORY_CONTRACT = '0xe7d07E7A3b39BA605B71b026cf50d4b044249436';
+const FALLBACK_CONTRACT = "0x2a0013FFf210316315430a2124F683679d9029B2";
+const MANAGER_CONTRACT = "0x34D26E0E757931421Ba120B05269DC475901FFc9";
+const ENTRYPOINT_CONTRACT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+const ACCOUNT_FACTORY_CONTRACT = "0xe7d07E7A3b39BA605B71b026cf50d4b044249436";
 
 const FALLBACK_ABI = [
   {
@@ -80,102 +79,102 @@ const ENTRYPOINT_ABI = [
   {
     inputs: [
       {
-        internalType: 'address',
-        name: 'sender',
-        type: 'address',
+        internalType: "address",
+        name: "sender",
+        type: "address",
       },
       {
-        internalType: 'uint192',
-        name: 'key',
-        type: 'uint192',
+        internalType: "uint192",
+        name: "key",
+        type: "uint192",
       },
     ],
-    name: 'getNonce',
+    name: "getNonce",
     outputs: [
       {
-        internalType: 'uint256',
-        name: 'nonce',
-        type: 'uint256',
+        internalType: "uint256",
+        name: "nonce",
+        type: "uint256",
       },
     ],
-    stateMutability: 'view',
-    type: 'function',
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [
       {
         components: [
           {
-            internalType: 'address',
-            name: 'sender',
-            type: 'address',
+            internalType: "address",
+            name: "sender",
+            type: "address",
           },
           {
-            internalType: 'uint256',
-            name: 'nonce',
-            type: 'uint256',
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
           },
           {
-            internalType: 'bytes',
-            name: 'initCode',
-            type: 'bytes',
+            internalType: "bytes",
+            name: "initCode",
+            type: "bytes",
           },
           {
-            internalType: 'bytes',
-            name: 'callData',
-            type: 'bytes',
+            internalType: "bytes",
+            name: "callData",
+            type: "bytes",
           },
           {
-            internalType: 'uint256',
-            name: 'callGasLimit',
-            type: 'uint256',
+            internalType: "uint256",
+            name: "callGasLimit",
+            type: "uint256",
           },
           {
-            internalType: 'uint256',
-            name: 'verificationGasLimit',
-            type: 'uint256',
+            internalType: "uint256",
+            name: "verificationGasLimit",
+            type: "uint256",
           },
           {
-            internalType: 'uint256',
-            name: 'preVerificationGas',
-            type: 'uint256',
+            internalType: "uint256",
+            name: "preVerificationGas",
+            type: "uint256",
           },
           {
-            internalType: 'uint256',
-            name: 'maxFeePerGas',
-            type: 'uint256',
+            internalType: "uint256",
+            name: "maxFeePerGas",
+            type: "uint256",
           },
           {
-            internalType: 'uint256',
-            name: 'maxPriorityFeePerGas',
-            type: 'uint256',
+            internalType: "uint256",
+            name: "maxPriorityFeePerGas",
+            type: "uint256",
           },
           {
-            internalType: 'bytes',
-            name: 'paymasterAndData',
-            type: 'bytes',
+            internalType: "bytes",
+            name: "paymasterAndData",
+            type: "bytes",
           },
           {
-            internalType: 'bytes',
-            name: 'signature',
-            type: 'bytes',
+            internalType: "bytes",
+            name: "signature",
+            type: "bytes",
           },
         ],
-        internalType: 'struct UserOperation',
-        name: 'userOp',
-        type: 'tuple',
+        internalType: "struct UserOperation",
+        name: "userOp",
+        type: "tuple",
       },
     ],
-    name: 'getUserOpHash',
+    name: "getUserOpHash",
     outputs: [
       {
-        internalType: 'bytes32',
-        name: '',
-        type: 'bytes32',
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
       },
     ],
-    stateMutability: 'view',
-    type: 'function',
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [
@@ -326,28 +325,28 @@ const ENTRYPOINT_ABI = [
 
 const ACCOUNT_FACTORY_ABI = [
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
+        internalType: "address",
+        name: "owner",
+        type: "address",
       },
       {
-        "internalType": "uint256",
-        "name": "salt",
-        "type": "uint256"
-      }
+        internalType: "uint256",
+        name: "salt",
+        type: "uint256",
+      },
     ],
-    "name": "getAddress",
-    "outputs": [
+    name: "getAddress",
+    outputs: [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [
@@ -376,19 +375,26 @@ const ACCOUNT_FACTORY_ABI = [
 ];
 
 const CHAIN_ID = 80001;
-const BUNDLER_RPC = "https://polygon-mumbai.g.alchemy.com/v2/C2-OfbqsQLjG2pRlnJ0uHDqoj07NHwPs";
+const BUNDLER_RPC =
+  "https://polygon-mumbai.g.alchemy.com/v2/C2-OfbqsQLjG2pRlnJ0uHDqoj07NHwPs";
 
-const ERC_20_CONTRACT_ADDRESS = '0xfe4F5145f6e09952a5ba9e956ED0C25e3Fa4c7F1';
-const ERC_1155_CONTRACT_ADDRESS = '0xA07e45A987F19E25176c877d98388878622623FA';
+const ERC_20_CONTRACT_ADDRESS = "0xfe4F5145f6e09952a5ba9e956ED0C25e3Fa4c7F1";
+const ERC_1155_CONTRACT_ADDRESS = "0xA07e45A987F19E25176c877d98388878622623FA";
 
 const bitski = new Bitski(
-  '1812bcfa-44ab-48e3-87b2-b06de6c8e89d',
-  'http://localhost:5173/callback.html',
+  "1812bcfa-44ab-48e3-87b2-b06de6c8e89d",
+  "http://localhost:5173/callback.html"
 );
 
 const alchemyProvider = new ethers.providers.JsonRpcProvider(BUNDLER_RPC);
+const stackupBundlerProvider = new ethers.providers.JsonRpcProvider(
+  "https://api.stackup.sh/v1/node/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
+);
+const stackupPaymasterProvider = new ethers.providers.JsonRpcProvider(
+  "https://api.stackup.sh/v1/paymaster/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
+);
 
-function App() {
+function SafeExample({ goBack }) {
   const [currentAccount, setAccount] = useState(null);
   const [currentSafe, setSafe] = useState(null);
   const [accountCurrencyBalance, setAccountCurrencyBalance] = useState(null);
@@ -396,6 +402,7 @@ function App() {
   const [accountNftBalance, setAccountNftBalance] = useState(null);
   const [safeNftBalance, setSafeNftBalance] = useState(null);
   const [provider, setProvider] = useState(null);
+  const [signMessageHash, setSignMessageHash] = useState(null);
   const [sendNftHash, setNftHash] = useState(null);
   const [sendTokenHash, setTokenHash] = useState(null);
   const [error, setError] = useState(null);
@@ -423,51 +430,60 @@ function App() {
       getProvider();
     }
 
-    const accounts = await provider.send('eth_accounts');
+    const accounts = await provider.send("eth_accounts");
 
     if (accounts.length) {
       return accounts;
     }
 
-    const addressAccounts = await provider.send('eth_requestAccounts');
+    const addressAccounts = await provider.send("eth_requestAccounts");
 
     if (addressAccounts.length) {
       return addressAccounts;
     }
 
-    setError('Could not find valid accounts');
+    setError("Could not find valid accounts");
   };
 
   const getCurrencyBalances = async (account, safe) => {
     const defaultBalance = {
-      balances: [{
-        balance: "0",
-        chainId: CHAIN_ID,
-        coinType: 60,
-        contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
-        tokenDecimals: 18,
-        tokenName: "Goerli Ethereum",
-        tokenStandard: "NATIVE",
-        tokenSymbol: "GTH"
-      }]
+      balances: [
+        {
+          balance: "0",
+          chainId: CHAIN_ID,
+          coinType: 60,
+          contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
+          tokenDecimals: 18,
+          tokenName: "Goerli Ethereum",
+          tokenStandard: "NATIVE",
+          tokenSymbol: "GTH",
+        },
+      ],
     };
-    
+
     if (!account || !safe) {
       setAccountBalance(defaultBalance);
       setSafeBalance(defaultBalance);
       return;
     }
 
-    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=${CHAIN_ID}`);
-    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=${CHAIN_ID}`);
+    const currentAccountBalanceResponse = await fetch(
+      `https://api.bitski.com/v2/balances?address=${account}&chainIds=${CHAIN_ID}`
+    );
+    const safeAccountBalanceResponse = await fetch(
+      `https://api.bitski.com/v2/balances?address=${safe}&chainIds=${CHAIN_ID}`
+    );
 
     if (currentAccountBalanceResponse.ok && safeAccountBalanceResponse.ok) {
-      const currentAccountBalanceData = await currentAccountBalanceResponse.json();
+      const currentAccountBalanceData =
+        await currentAccountBalanceResponse.json();
       const safeAccountBalanceData = await safeAccountBalanceResponse.json();
 
-      const currentAccountBalance = currentAccountBalanceData.balances ?? defaultBalance;
-      const safeAccountBalance = safeAccountBalanceData.balances ?? defaultBalance;
+      const currentAccountBalance =
+        currentAccountBalanceData.balances ?? defaultBalance;
+      const safeAccountBalance =
+        safeAccountBalanceData.balances ?? defaultBalance;
 
       setAccountCurrencyBalance(currentAccountBalance);
       setSafeCurrencyBalance(safeAccountBalance);
@@ -476,34 +492,43 @@ function App() {
 
   const getNftBalances = async (account, safe) => {
     const defaultBalance = {
-      balances: [{
-        balance: "0",
-        chainId: CHAIN_ID,
-        coinType: 60,
-        contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
-        tokenDecimals: 18,
-        tokenName: "Goerli Ethereum",
-        tokenStandard: "NATIVE",
-        tokenSymbol: "GTH"
-      }]
+      balances: [
+        {
+          balance: "0",
+          chainId: CHAIN_ID,
+          coinType: 60,
+          contractAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          imageUrl: "https://assets.ankr.com/charts/icon-only/eth.svg",
+          tokenDecimals: 18,
+          tokenName: "Goerli Ethereum",
+          tokenStandard: "NATIVE",
+          tokenSymbol: "GTH",
+        },
+      ],
     };
-    
+
     if (!account || !safe) {
       setAccountBalance(defaultBalance);
       setSafeBalance(defaultBalance);
       return;
     }
 
-    const currentAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${account}&chainIds=${CHAIN_ID}&nfts=true`);
-    const safeAccountBalanceResponse = await fetch(`https://api.bitski.com/v2/balances?address=${safe}&chainIds=${CHAIN_ID}&nfts=true`);
+    const currentAccountBalanceResponse = await fetch(
+      `https://api.bitski.com/v2/balances?address=${account}&chainIds=${CHAIN_ID}&nfts=true`
+    );
+    const safeAccountBalanceResponse = await fetch(
+      `https://api.bitski.com/v2/balances?address=${safe}&chainIds=${CHAIN_ID}&nfts=true`
+    );
 
     if (currentAccountBalanceResponse.ok && safeAccountBalanceResponse.ok) {
-      const currentAccountBalanceData = await currentAccountBalanceResponse.json();
+      const currentAccountBalanceData =
+        await currentAccountBalanceResponse.json();
       const safeAccountBalanceData = await safeAccountBalanceResponse.json();
 
-      const currentAccountBalance = currentAccountBalanceData.balances ?? defaultBalance;
-      const safeAccountBalance = safeAccountBalanceData.balances ?? defaultBalance;
+      const currentAccountBalance =
+        currentAccountBalanceData.balances ?? defaultBalance;
+      const safeAccountBalance =
+        safeAccountBalanceData.balances ?? defaultBalance;
 
       setAccountNftBalance(currentAccountBalance);
       setSafeNftBalance(safeAccountBalance);
@@ -512,19 +537,24 @@ function App() {
 
   const getNft = (balances) => {
     return getBalanceForContractAddress(balances, ERC_1155_CONTRACT_ADDRESS);
-  }
+  };
 
   const getErc20 = (balances) => {
     return getBalanceForContractAddress(balances, ERC_20_CONTRACT_ADDRESS);
-  }
+  };
 
   const getEthBalance = (balances) => {
-    return balances?.find(({ tokenStandard }) => tokenStandard === 'NATIVE')?.balance ?? 0;
+    return (
+      balances?.find(({ tokenStandard }) => tokenStandard === "NATIVE")
+        ?.balance ?? 0
+    );
   };
 
   const getBalanceForContractAddress = (balances, tokenAddress) => {
-    return balances?.find(({contractAddress }) => contractAddress === tokenAddress);
-  }
+    return balances?.find(
+      ({ contractAddress }) => contractAddress === tokenAddress
+    );
+  };
 
   const connect = async () => {
     setError(null);
@@ -542,10 +572,16 @@ function App() {
     const accounts = await getAccounts();
 
     if (accounts && accounts[0]) {
+      const AccountFactoryContract = new Contract(
+        ACCOUNT_FACTORY_CONTRACT,
+        new Interface(ACCOUNT_FACTORY_ABI),
+        provider
+      );
+      const safeAccount = await AccountFactoryContract.getAddress(
+        accounts[0],
+        0
+      );
 
-      const AccountFactoryContract = new Contract(ACCOUNT_FACTORY_CONTRACT, new Interface(ACCOUNT_FACTORY_ABI), provider);
-      const safeAccount = await AccountFactoryContract.getAddress(accounts[0], 0);
-      
       setAccount(accounts[0]);
 
       if (safeAccount) {
@@ -567,13 +603,17 @@ function App() {
     if (!provider) {
       getProvider();
     }
-    
-    const code = await provider.getCode(address)
+
+    const code = await provider.getCode(address);
     return code.length > 2;
-  }
+  };
 
   const estimateUserOpGas = async (userOp) => {
-    const gasData = await alchemyProvider.send('eth_estimateUserOperationGas', [userOp, ENTRYPOINT_CONTRACT]);
+    const gasData = await stackupBundlerProvider.send(
+      "eth_estimateUserOperationGas",
+      [userOp, ENTRYPOINT_CONTRACT]
+    );
+    // const gasData = await alchemyProvider.send('eth_estimateUserOperationGas', [userOp, ENTRYPOINT_CONTRACT]);
 
     return gasData;
   };
@@ -597,22 +637,26 @@ function App() {
     const ERC4337FallbackContract = new Contract(
       FALLBACK_CONTRACT,
       new Interface(FALLBACK_ABI),
-      safeOwner,
+      safeOwner
     );
 
     const ERC4337ManagerContract = new Contract(
       MANAGER_CONTRACT,
       new Interface(MANAGER_ABI),
-      safeOwner,
+      safeOwner
     );
 
     const EntrypointContract = new Contract(
       ENTRYPOINT_CONTRACT,
       new Interface(ENTRYPOINT_ABI),
-      safeOwner,
+      safeOwner
     );
 
-    const AccountFactoryContract = new Contract(ACCOUNT_FACTORY_CONTRACT, new Interface(ACCOUNT_FACTORY_ABI), safeOwner);
+    const AccountFactoryContract = new Contract(
+      ACCOUNT_FACTORY_CONTRACT,
+      new Interface(ACCOUNT_FACTORY_ABI),
+      safeOwner
+    );
 
     const ethAdapter = new EthersAdapter({
       ethers,
@@ -620,12 +664,10 @@ function App() {
     });
 
     const predictedSafe = {
-      safeAccountConfig: {
-
-      },
+      safeAccountConfig: {},
       safeDeploymentConfig: {
-        safeVersion: '1.3.0',
-      }
+        safeVersion: "1.3.0",
+      },
     };
 
     const safeSdk = await Safe.create({ ethAdapter, predictedSafe });
@@ -645,45 +687,71 @@ function App() {
         safeTransaction.data.to,
         safeTransaction.data.value,
         safeTransaction.data.data,
-        safeTransaction.data.operation,
+        safeTransaction.data.operation
       )
     ).data;
 
     const nonce = hexlify(await EntrypointContract.getNonce(currentSafe, 0));
 
-    const initTransaction = await AccountFactoryContract.populateTransaction.createAccount(currentAccount, BigNumber.from(0));
+    const initTransaction =
+      await AccountFactoryContract.populateTransaction.createAccount(
+        currentAccount,
+        BigNumber.from(0)
+      );
 
     const userOp = {
       sender: currentSafe,
       nonce,
       callData,
-      initCode: ACCOUNT_FACTORY_CONTRACT + initTransaction.data?.replace("0x", ""),
-      signature: '0x',
+      initCode:
+        ACCOUNT_FACTORY_CONTRACT + initTransaction.data?.replace("0x", ""),
+      signature: "0x",
       callGasLimit: "0x238c",
       verificationGasLimit: "0x1",
       preVerificationGas: "0xea60",
-      maxFeePerGas: '0xeec17f39',
+      maxFeePerGas: "0xeec17f39",
       maxPriorityFeePerGas: "0x5f5e100",
       paymasterAndData: currentSafe,
     };
 
     const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
-    userOp.signature = await safeOwner.signMessage(ethers.utils.arrayify(userOpHash));
-    
+    const safeSignature = await ethAdapter.signMessage(
+      ethers.utils.arrayify(userOpHash)
+    );
+    const signerAddress = await ethAdapter.getSignerAddress();
+    userOp.signature = adjustVInSignature(
+      "eth_sign",
+      safeSignature,
+      userOpHash,
+      signerAddress
+    );
+
     // const paymasterTransaction = await alchemyProvider.send('alchemy_requestPaymasterAndData', [{
     //   policyId: '43ee9d32-f26f-482f-9602-5766f2b66196',
     //   entryPoint: ENTRYPOINT_CONTRACT,
     //   userOperation: userOp
     // }]);
 
-    // userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
+    const paymasterTransaction = await stackupPaymasterProvider.send(
+      "pm_sponsorUserOperation",
+      [userOp, ENTRYPOINT_CONTRACT, { type: "payg" }]
+    );
+
+    userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
+    userOp.callGasLimit = paymasterTransaction.callGasLimit;
+    userOp.preVerificationGas = paymasterTransaction.preVerificationGas;
+    userOp.verificationGasLimit = paymasterTransaction.verificationGasLimit;
 
     return userOp;
   };
 
   const sendUserOp = async (userOp) => {
-    const opsTransaction = await alchemyProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
+    const opsTransaction = await stackupBundlerProvider.send(
+      "eth_sendUserOperation",
+      [userOp, ENTRYPOINT_CONTRACT]
+    );
+    // const opsTransaction = await alchemyProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
     const result = await opsTransaction.wait();
 
     if (result && result.error && result.error.message) {
@@ -691,83 +759,162 @@ function App() {
     } else if (result) {
       return result;
     } else {
-      throw 'Something went wrong. Please try again.';
+      throw "Something went wrong. Please try again.";
     }
+  };
+
+  function isTxHashSignedWithPrefix(txHash, signature, ownerAddress) {
+    let hasPrefix;
+    try {
+      const rsvSig = {
+        r: Buffer.from(signature.slice(2, 66), "hex"),
+        s: Buffer.from(signature.slice(66, 130), "hex"),
+        v: parseInt(signature.slice(130, 132), 16),
+      };
+      const recoveredData = ecrecover(
+        Buffer.from(txHash.slice(2), "hex"),
+        rsvSig.v,
+        rsvSig.r,
+        rsvSig.s
+      );
+      const recoveredAddress = bufferToHex(pubToAddress(recoveredData));
+      hasPrefix = !sameString(recoveredAddress, ownerAddress);
+    } catch (e) {
+      hasPrefix = true;
+    }
+    return hasPrefix;
+  }
+
+  const adjustVInSignature = (
+    signingMethod,
+    signature,
+    safeTxHash,
+    signerAddress
+  ) => {
+    const ETHEREUM_V_VALUES = [0, 1, 27, 28];
+    const MIN_VALID_V_VALUE_FOR_SAFE_ECDSA = 27;
+    let signatureV = parseInt(signature.slice(-2), 16);
+    if (!ETHEREUM_V_VALUES.includes(signatureV)) {
+      throw new Error("Invalid signature");
+    }
+    if (signingMethod === "eth_sign") {
+      /*
+      The Safe's expected V value for ECDSA signature is:
+      - 27 or 28
+      - 31 or 32 if the message was signed with a EIP-191 prefix. Should be calculated as ECDSA V value + 4
+      Some wallets do that, some wallets don't, V > 30 is used by contracts to differentiate between
+      prefixed and non-prefixed messages. The only way to know if the message was signed with a
+      prefix is to check if the signer address is the same as the recovered address.
+
+      More info:
+      https://docs.safe.global/learn/signatures
+    */
+      if (signatureV < MIN_VALID_V_VALUE_FOR_SAFE_ECDSA) {
+        signatureV += MIN_VALID_V_VALUE_FOR_SAFE_ECDSA;
+      }
+      const adjustedSignature =
+        signature.slice(0, -2) + signatureV.toString(16);
+      const signatureHasPrefix = isTxHashSignedWithPrefix(
+        safeTxHash,
+        adjustedSignature,
+        signerAddress
+      );
+      if (signatureHasPrefix) {
+        signatureV += 4;
+      }
+    }
+    if (signingMethod === "eth_signTypedData") {
+      // Metamask with ledger returns V=0/1 here too, we need to adjust it to be ethereum's valid value (27 or 28)
+      if (signatureV < MIN_VALID_V_VALUE_FOR_SAFE_ECDSA) {
+        signatureV += MIN_VALID_V_VALUE_FOR_SAFE_ECDSA;
+      }
+    }
+    signature = signature.slice(0, -2) + signatureV.toString(16);
+    return signature;
   };
 
   const request = async (request) => {
     const userOp = await signUserOp(request);
 
-    delete userOp.verificationGasLimit;
-    delete userOp.callGasLimit;
-    delete userOp.preVerificationGas;
+    // delete userOp.verificationGasLimit;
+    // delete userOp.callGasLimit;
+    // delete userOp.preVerificationGas;
 
     const gasData = await estimateUserOpGas(userOp);
 
     // delete userOp.paymasterAndData;
-    userOp.verificationGasLimit = gasData.verificationGasLimit;
+    userOp.verificationGasLimit = gasData.verificationGas;
     userOp.callGasLimit = gasData.callGasLimit;
     userOp.preVerificationGas = gasData.preVerificationGas;
-    
+
     const result = await sendUserOp(userOp);
 
     return result;
   };
 
+  const signMessageWithSafe = async (message) => {
+    request({
+      from: currentSafe,
+      to: currentAccount,
+      data: "0x5468697320697320612074657374206d657373616765",
+      value: "0x0",
+    });
+  };
+
   const sendNftToVault = (nft) => {
     const iface1155 = new Interface([
       {
-        name: 'safeTransferFrom',
+        name: "safeTransferFrom",
         inputs: [
           {
-            name: 'from',
-            type: 'address',
+            name: "from",
+            type: "address",
           },
           {
-            name: 'to',
-            type: 'address',
+            name: "to",
+            type: "address",
           },
           {
-            name: 'id',
-            type: 'uint256',
+            name: "id",
+            type: "uint256",
           },
           {
-            name: 'amount',
-            type: 'uint256',
+            name: "amount",
+            type: "uint256",
           },
           {
-            name: 'data',
-            type: 'bytes',
+            name: "data",
+            type: "bytes",
           },
         ],
         outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
+        stateMutability: "nonpayable",
+        type: "function",
       },
     ]);
 
-    function create1155TransactionData(
-      address,
-      recipient,
-      quantity,
-      balance,
-    ) {
-      return iface1155.encodeFunctionData('safeTransferFrom', [
+    function create1155TransactionData(address, recipient, quantity, balance) {
+      return iface1155.encodeFunctionData("safeTransferFrom", [
         address,
         recipient,
         balance.id,
         quantity,
-        '0x',
+        "0x",
       ]);
     }
 
-    const erc1155TxnData = create1155TransactionData(currentSafe, currentAccount, 1, nft)
+    const erc1155TxnData = create1155TransactionData(
+      currentSafe,
+      currentAccount,
+      1,
+      nft
+    );
 
     request({
       from: currentSafe,
       to: ERC_1155_CONTRACT_ADDRESS,
       data: erc1155TxnData,
-      value: '0x0',
+      value: "0x0",
     });
   };
 
@@ -775,44 +922,61 @@ function App() {
     const buildTransactionData = () => {
       const abi = [
         {
-          name: 'transfer',
+          name: "transfer",
           constant: false,
           inputs: [
             {
-              name: 'to',
-              type: 'address',
+              name: "to",
+              type: "address",
             },
             {
-              name: 'value',
-              type: 'uint256',
+              name: "value",
+              type: "uint256",
             },
           ],
           outputs: [],
           payable: false,
-          stateMutability: 'nonpayable',
-          type: 'function',
+          stateMutability: "nonpayable",
+          type: "function",
         },
       ];
 
       const iface = new Interface(abi);
 
       // send 0.01 value of token
-      return iface.encodeFunctionData('transfer', [currentAccount, BigNumber.from('10000000000000000')]);
+      return iface.encodeFunctionData("transfer", [
+        currentAccount,
+        BigNumber.from("10000000000000000"),
+      ]);
     };
 
     const requestData = {
       to: ERC_20_CONTRACT_ADDRESS,
       from: currentSafe,
       data: buildTransactionData(),
-      value: '0x0',
-    }
-    
+      value: "0x0",
+    };
+
     request(requestData);
   };
 
   return (
     <main className="flex flex-col justify-center items-center h-screen">
-      <h1 className="text-4xl">Account Abstraction</h1>
+      <button
+        className="btn btn-circle absolute top-4 left-4"
+        onClick={() => goBack()}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" />
+        </svg>
+      </button>
+      <h1 className="text-4xl">Safe Example</h1>
 
       {error && (
         <div className="alert alert-error shadow-lg max-w-xs my-4">
@@ -840,7 +1004,7 @@ function App() {
           className="my-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
           onClick={() => (currentAccount ? disconnect() : connect())}
         >
-          {currentAccount ? 'Disconnect' : 'Sign In With Bitski'}
+          {currentAccount ? "Disconnect" : "Sign In With Bitski"}
         </button>
 
         <div className="flex flex-col w-full lg:flex-row">
@@ -849,22 +1013,46 @@ function App() {
               <div className="break-all">
                 <p className="">Bitski Vault</p>
                 <p className="mt-2 font-bold">{currentAccount}</p>
-                {accountCurrencyBalance && <p className="mt-2 font-bold">Balance: {getEthBalance(accountCurrencyBalance)} ETH</p>}
+                {accountCurrencyBalance && (
+                  <p className="mt-2 font-bold">
+                    Balance: {getEthBalance(accountCurrencyBalance)} ETH
+                  </p>
+                )}
               </div>
             ) : (
-              'Not logged in.'
+              "Not logged in."
             )}
-          </div> 
-          <div className="divider lg:divider-horizontal"></div> 
+          </div>
+          <div className="divider lg:divider-horizontal"></div>
           <div className="grid flex-grow card bg-base-300 rounded-box p-4 max-w-xl">
             {currentSafe ? (
               <div className="break-all">
-                <p className="">Safe {!!isDeployed(currentSafe) ? '(ACTIVE)' : '(INACTIVE)'}</p>
+                <p className="">
+                  Safe {!!isDeployed(currentSafe) ? "(ACTIVE)" : "(INACTIVE)"}
+                </p>
                 <p className="mt-2 font-bold">{currentSafe}</p>
-                {safeCurrencyBalance && <p className="mt-2 font-bold">Balance: {getEthBalance(safeCurrencyBalance)} ETH</p>}
+                {safeCurrencyBalance && (
+                  <p className="mt-2 font-bold">
+                    Balance: {getEthBalance(safeCurrencyBalance)} ETH
+                  </p>
+                )}
               </div>
-            ) : 'Not logged in.'}
-            {currentSafe && safeNftBalance ? <p className="mt-2 font-bold break-all">NFT: {JSON.stringify(getNft(safeNftBalance))}</p> : null}
+            ) : (
+              "Not logged in."
+            )}
+            {currentSafe && !signMessageHash ? (
+              <button
+                className="mt-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
+                onClick={() => signMessageWithSafe("This is a test message")}
+              >
+                Sign Message w/ Safe
+              </button>
+            ) : null}
+            {currentSafe && safeNftBalance ? (
+              <p className="mt-2 font-bold break-all">
+                NFT: {JSON.stringify(getNft(safeNftBalance))}
+              </p>
+            ) : null}
             {currentSafe && !sendNftHash ? (
               <button
                 className="my-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
@@ -873,7 +1061,11 @@ function App() {
                 Send NFT to Vault
               </button>
             ) : null}
-            {currentSafe && safeCurrencyBalance ? <p className="mt-2 font-bold break-all">ERC20: {JSON.stringify(getErc20(safeCurrencyBalance))}</p> : null}
+            {currentSafe && safeCurrencyBalance ? (
+              <p className="mt-2 font-bold break-all">
+                ERC20: {JSON.stringify(getErc20(safeCurrencyBalance))}
+              </p>
+            ) : null}
             {currentSafe && !sendTokenHash ? (
               <button
                 className="mt-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
@@ -888,50 +1080,5 @@ function App() {
     </main>
   );
 }
-=======
-import React, { useState } from "react";
-import SafeExample from "./SafeExample";
-import SimpleExample from "./SimpleExample";
 
-const App = () => {
-  const [currentRoute, setRoute] = useState("home");
-
-  switch (currentRoute) {
-    case "safe":
-      return <SafeExample goBack={() => setRoute("home")} />;
-    case "simple":
-      return <SimpleExample goBack={() => setRoute("home")} />;
-    default:
-      return (
-        <div className="hero min-h-screen bg-base-200">
-          <div className="hero-content text-center">
-            <div className="max-w-2xl">
-              <h1 className="text-5xl font-bold">
-                Bitski + Account Abstraction
-              </h1>
-              <p className="py-6">
-                Provident cupiditate voluptatem et in. Quaerat fugiat ut
-                assumenda excepturi exercitationem quasi. In deleniti eaque aut
-                repudiandae et a id nisi.
-              </p>
-              <button
-                className="btn mr-4 bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
-                onClick={() => setRoute("safe")}
-              >
-                Safe Example
-              </button>
-              <button
-                className="btn bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
-                onClick={() => setRoute("simple")}
-              >
-                Simple Account Example
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-  }
-};
->>>>>>> Stashed changes
-
-export default App;
+export default SafeExample;
