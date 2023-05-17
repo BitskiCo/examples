@@ -5,9 +5,14 @@ import { Contract } from "@ethersproject/contracts";
 import { Interface } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexlify } from "@ethersproject/bytes";
+import {
+  SimpleAccount,
+  SimpleAccount__factory,
+  SimpleAccountFactory,
+  SimpleAccountFactory__factory,
+} from "@account-abstraction/contracts";
 
 const ENTRYPOINT_CONTRACT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const SIMPLE_ACCOUNT_CONTRACT = "";
 const ACCOUNT_FACTORY_CONTRACT = "0x9406Cc6185a346906296840746125a0E44976454";
 
 const ENTRYPOINT_ABI = [
@@ -258,6 +263,32 @@ const ENTRYPOINT_ABI = [
   },
 ];
 
+const ACCOUNT_ABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "dest",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "func",
+        type: "bytes",
+      },
+    ],
+    name: "execute",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
 const ACCOUNT_FACTORY_ABI = [
   {
     inputs: [
@@ -322,14 +353,14 @@ const bitski = new Bitski(
 );
 
 const alchemyProvider = new ethers.providers.JsonRpcProvider(BUNDLER_RPC);
-// const stackupBundlerProvider = new ethers.providers.JsonRpcProvider(
-//   "https://api.stackup.sh/v1/node/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
-// );
-// const stackupPaymasterProvider = new ethers.providers.JsonRpcProvider(
-//   "https://api.stackup.sh/v1/paymaster/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
-// );
+const stackupBundlerProvider = new ethers.providers.JsonRpcProvider(
+  "https://api.stackup.sh/v1/node/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
+);
+const stackupPaymasterProvider = new ethers.providers.JsonRpcProvider(
+  "https://api.stackup.sh/v1/paymaster/a9c136bce80dd619f4bea291f8c56aef127b74f7758c1e4cb6c1ef8339600925"
+);
 
-function SimpleExample() {
+function SimpleExample({ goBack }) {
   const [currentAccount, setAccount] = useState(null);
   const [currentSimpleAccount, setSimpleAccount] = useState(null);
   const [accountCurrencyBalance, setAccountCurrencyBalance] = useState(null);
@@ -480,7 +511,7 @@ function SimpleExample() {
     return getBalanceForContractAddress(balances, ERC_20_CONTRACT_ADDRESS);
   };
 
-  const getEthBalance = (balances) => {
+  const getMaticBalance = (balances) => {
     return (
       balances?.find(({ tokenStandard }) => tokenStandard === "NATIVE")
         ?.balance ?? 0
@@ -568,63 +599,87 @@ function SimpleExample() {
     const EntrypointContract = new Contract(
       ENTRYPOINT_CONTRACT,
       new Interface(ENTRYPOINT_ABI),
-      safeOwner
+      simpleAccountOwner
     );
 
     const AccountFactoryContract = new Contract(
       ACCOUNT_FACTORY_CONTRACT,
       new Interface(ACCOUNT_FACTORY_ABI),
-      safeOwner
+      simpleAccountOwner
     );
+
+    const SimpleAccountContract = new Contract(
+      currentSimpleAccount,
+      new Interface(ACCOUNT_ABI),
+      simpleAccountOwner
+    );
+
+    const simpleAccount = SimpleAccount__factory.connect(
+      currentSimpleAccount,
+      simpleAccountOwner
+    );
+
+    const callData = simpleAccount.interface.encodeFunctionData("execute", [
+      request.to,
+      request.value,
+      request.data,
+    ]);
 
     const nonce = hexlify(
       await EntrypointContract.getNonce(currentSimpleAccount, 0)
     );
 
-    const initTransaction =
-      await AccountFactoryContract.populateTransaction.createAccount(
-        currentAccount,
-        BigNumber.from(0)
-      );
+    const { maxFeePerGas, maxPriorityFeePerGas } =
+      await alchemyProvider.getFeeData();
 
     const userOp = {
       sender: currentSimpleAccount,
       nonce,
+      initCode: "0x",
       callData,
-      initCode:
-        ACCOUNT_FACTORY_CONTRACT + initTransaction.data?.replace("0x", ""),
-      signature: "0x",
-      callGasLimit: "0x238c",
-      verificationGasLimit: "0x1",
-      preVerificationGas: "0xea60",
-      maxFeePerGas: "0xeec17f39",
-      maxPriorityFeePerGas: "0x5f5e100",
-      paymasterAndData: currentSimpleAccount,
+      // callGasLimit: "0x",
+      // verificationGasLimit: "0x",
+      // preVerificationGas: "0x",
+      maxFeePerGas: "0x0",
+      maxPriorityFeePerGas: "0x0",
+      paymasterAndData: "0x",
+      signature:
+        "0xaecc72634f6c02bc10ec820d21f6ae77cfa16f970b9ae2172133c4f445db47e559a347766e448f5ded21ce41fc2ca92490ee32db75df7508309c65604f4a73af1b",
     };
+
+    const gasData = await estimateUserOpGas(userOp);
+
+    userOp.verificationGasLimit = gasData.verificationGasLimit;
+    userOp.preVerificationGas = gasData.preVerificationGas;
+    userOp.callGasLimit = gasData.callGasLimit;
+
+    userOp.maxFeePerGas = hexlify(maxFeePerGas);
+    userOp.maxPriorityFeePerGas = hexlify(maxPriorityFeePerGas);
 
     const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
-    userOp.signature = await simpleAccountOwner.signMessage(
-      ethers.utils.arrayify(userOpHash)
-    );
+    // const paymasterTransaction = await alchemyProvider.send(
+    //   "alchemy_requestPaymasterAndData",
+    //   [
+    //     {
+    //       policyId: "43ee9d32-f26f-482f-9602-5766f2b66196",
+    //       entryPoint: ENTRYPOINT_CONTRACT,
+    //       userOperation: userOp,
+    //     },
+    //   ]
+    // );
 
-    const paymasterTransaction = await alchemyProvider.send(
-      "alchemy_requestPaymasterAndData",
-      [
-        {
-          policyId: "43ee9d32-f26f-482f-9602-5766f2b66196",
-          entryPoint: ENTRYPOINT_CONTRACT,
-          userOperation: userOp,
-        },
-      ]
-    );
+    // userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
 
     // const paymasterTransaction = await stackupPaymasterProvider.send(
     //   "pm_sponsorUserOperation",
     //   [userOp, ENTRYPOINT_CONTRACT, { type: "payg" }]
     // );
 
-    userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
+    userOp.signature = await simpleAccountOwner.signMessage(
+      ethers.utils.arrayify(userOpHash)
+    );
+
     // userOp.callGasLimit = paymasterTransaction.callGasLimit;
     // userOp.preVerificationGas = paymasterTransaction.preVerificationGas;
     // userOp.verificationGasLimit = paymasterTransaction.verificationGasLimit;
@@ -633,12 +688,14 @@ function SimpleExample() {
   };
 
   const sendUserOp = async (userOp) => {
-    const opsTransaction = await stackupBundlerProvider.send(
-      "eth_sendUserOperation",
-      [userOp, ENTRYPOINT_CONTRACT]
-    );
-    // const opsTransaction = await alchemyProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
-    const result = await opsTransaction.wait();
+    // const opsTransaction = await stackupBundlerProvider.send(
+    //   "eth_sendUserOperation",
+    //   [userOp, ENTRYPOINT_CONTRACT]
+    // );
+    const result = await alchemyProvider.send("eth_sendUserOperation", [
+      userOp,
+      ENTRYPOINT_CONTRACT,
+    ]);
 
     if (result && result.error && result.error.message) {
       throw new Error(result.error.message);
@@ -651,18 +708,6 @@ function SimpleExample() {
 
   const request = async (request) => {
     const userOp = await signUserOp(request);
-
-    // delete userOp.verificationGasLimit;
-    // delete userOp.callGasLimit;
-    // delete userOp.preVerificationGas;
-
-    const gasData = await estimateUserOpGas(userOp);
-
-    // delete userOp.paymasterAndData;
-    userOp.verificationGasLimit = gasData.verificationGas;
-    userOp.callGasLimit = gasData.callGasLimit;
-    userOp.preVerificationGas = gasData.preVerificationGas;
-
     const result = await sendUserOp(userOp);
 
     return result;
@@ -725,7 +770,7 @@ function SimpleExample() {
     });
   };
 
-  const sendTokenToVault = () => {
+  const sendTokenToVault = async () => {
     const buildTransactionData = () => {
       const abi = [
         {
@@ -764,7 +809,17 @@ function SimpleExample() {
       value: "0x0",
     };
 
-    request(requestData);
+    try {
+      const result = await request(requestData);
+
+      if (result) {
+        alert(result);
+      }
+    } catch (e) {
+      if (e.error.message) {
+        alert(e.error.message);
+      }
+    }
   };
 
   return (
@@ -822,7 +877,7 @@ function SimpleExample() {
                 <p className="mt-2 font-bold">{currentAccount}</p>
                 {accountCurrencyBalance && (
                   <p className="mt-2 font-bold">
-                    Balance: {getEthBalance(accountCurrencyBalance)} ETH
+                    Balance: {getMaticBalance(accountCurrencyBalance)} MATIC
                   </p>
                 )}
               </div>
@@ -841,9 +896,10 @@ function SimpleExample() {
                     : "(INACTIVE)"}
                 </p>
                 <p className="mt-2 font-bold">{currentSimpleAccount}</p>
-                {simpleAccounteCurrencyBalance && (
+                {simpleAccountCurrencyBalance && (
                   <p className="mt-2 font-bold">
-                    Balance: {getEthBalance(simpleAccountCurrencyBalance)} ETH
+                    Balance: {getMaticBalance(simpleAccountCurrencyBalance)}{" "}
+                    MATIC
                   </p>
                 )}
               </div>

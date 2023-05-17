@@ -11,7 +11,7 @@ import { hexlify } from "@ethersproject/bytes";
 const FALLBACK_CONTRACT = "0x2a0013FFf210316315430a2124F683679d9029B2";
 const MANAGER_CONTRACT = "0x34D26E0E757931421Ba120B05269DC475901FFc9";
 const ENTRYPOINT_CONTRACT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const ACCOUNT_FACTORY_CONTRACT = "0xe7d07E7A3b39BA605B71b026cf50d4b044249436";
+const ACCOUNT_FACTORY_CONTRACT = "0xbd4e2Df9bCc23F6Ff337Bb5C1056Fb468349B582";
 
 const FALLBACK_ABI = [
   {
@@ -543,7 +543,7 @@ function SafeExample({ goBack }) {
     return getBalanceForContractAddress(balances, ERC_20_CONTRACT_ADDRESS);
   };
 
-  const getEthBalance = (balances) => {
+  const getMaticBalance = (balances) => {
     return (
       balances?.find(({ tokenStandard }) => tokenStandard === "NATIVE")
         ?.balance ?? 0
@@ -609,11 +609,14 @@ function SafeExample({ goBack }) {
   };
 
   const estimateUserOpGas = async (userOp) => {
-    const gasData = await stackupBundlerProvider.send(
-      "eth_estimateUserOperationGas",
-      [userOp, ENTRYPOINT_CONTRACT]
-    );
-    // const gasData = await alchemyProvider.send('eth_estimateUserOperationGas', [userOp, ENTRYPOINT_CONTRACT]);
+    // const gasData = await stackupBundlerProvider.send(
+    //   "eth_estimateUserOperationGas",
+    //   [userOp, ENTRYPOINT_CONTRACT]
+    // );
+    const gasData = await alchemyProvider.send("eth_estimateUserOperationGas", [
+      userOp,
+      ENTRYPOINT_CONTRACT,
+    ]);
 
     return gasData;
   };
@@ -693,55 +696,47 @@ function SafeExample({ goBack }) {
 
     const nonce = hexlify(await EntrypointContract.getNonce(currentSafe, 0));
 
-    const initTransaction =
-      await AccountFactoryContract.populateTransaction.createAccount(
-        currentAccount,
-        BigNumber.from(0)
-      );
+    // const initTransaction = await AccountFactoryContract.createAccount(
+    //   currentAccount,
+    //   BigNumber.from(0)
+    // );
+
+    const { maxFeePerGas, maxPriorityFeePerGas } =
+      await alchemyProvider.getFeeData();
 
     const userOp = {
       sender: currentSafe,
       nonce,
+      initCode: "0x",
       callData,
-      initCode:
-        ACCOUNT_FACTORY_CONTRACT + initTransaction.data?.replace("0x", ""),
-      signature: "0x",
-      callGasLimit: "0x238c",
-      verificationGasLimit: "0x1",
-      preVerificationGas: "0xea60",
-      maxFeePerGas: "0xeec17f39",
-      maxPriorityFeePerGas: "0x5f5e100",
-      paymasterAndData: currentSafe,
+      // callGasLimit: "0x",
+      // verificationGasLimit: "0x",
+      // preVerificationGas: "0x",
+      paymasterAndData: "0x",
+      signature:
+        "0xaecc72634f6c02bc10ec820d21f6ae77cfa16f970b9ae2172133c4f445db47e559a347766e448f5ded21ce41fc2ca92490ee32db75df7508309c65604f4a73af1b",
     };
+
+    const gasData = await estimateUserOpGas(userOp);
+
+    userOp.verificationGasLimit = hexlify(
+      BigNumber.from(gasData.verificationGasLimit).add(BigNumber.from(8000))
+    );
+    userOp.preVerificationGas = hexlify(
+      BigNumber.from(gasData.preVerificationGas).add(BigNumber.from(8000))
+    );
+    userOp.callGasLimit = hexlify(
+      BigNumber.from(gasData.callGasLimit).add(BigNumber.from(8000))
+    );
+
+    userOp.maxFeePerGas = hexlify(maxFeePerGas);
+    userOp.maxPriorityFeePerGas = hexlify(maxPriorityFeePerGas);
 
     const userOpHash = await EntrypointContract.getUserOpHash(userOp);
 
-    const safeSignature = await ethAdapter.signMessage(
+    userOp.signature = await ethAdapter.signMessage(
       ethers.utils.arrayify(userOpHash)
     );
-    const signerAddress = await ethAdapter.getSignerAddress();
-    userOp.signature = adjustVInSignature(
-      "eth_sign",
-      safeSignature,
-      userOpHash,
-      signerAddress
-    );
-
-    // const paymasterTransaction = await alchemyProvider.send('alchemy_requestPaymasterAndData', [{
-    //   policyId: '43ee9d32-f26f-482f-9602-5766f2b66196',
-    //   entryPoint: ENTRYPOINT_CONTRACT,
-    //   userOperation: userOp
-    // }]);
-
-    const paymasterTransaction = await stackupPaymasterProvider.send(
-      "pm_sponsorUserOperation",
-      [userOp, ENTRYPOINT_CONTRACT, { type: "payg" }]
-    );
-
-    userOp.paymasterAndData = paymasterTransaction.paymasterAndData;
-    userOp.callGasLimit = paymasterTransaction.callGasLimit;
-    userOp.preVerificationGas = paymasterTransaction.preVerificationGas;
-    userOp.verificationGasLimit = paymasterTransaction.verificationGasLimit;
 
     return userOp;
   };
@@ -763,102 +758,11 @@ function SafeExample({ goBack }) {
     }
   };
 
-  function isTxHashSignedWithPrefix(txHash, signature, ownerAddress) {
-    let hasPrefix;
-    try {
-      const rsvSig = {
-        r: Buffer.from(signature.slice(2, 66), "hex"),
-        s: Buffer.from(signature.slice(66, 130), "hex"),
-        v: parseInt(signature.slice(130, 132), 16),
-      };
-      const recoveredData = ecrecover(
-        Buffer.from(txHash.slice(2), "hex"),
-        rsvSig.v,
-        rsvSig.r,
-        rsvSig.s
-      );
-      const recoveredAddress = bufferToHex(pubToAddress(recoveredData));
-      hasPrefix = !sameString(recoveredAddress, ownerAddress);
-    } catch (e) {
-      hasPrefix = true;
-    }
-    return hasPrefix;
-  }
-
-  const adjustVInSignature = (
-    signingMethod,
-    signature,
-    safeTxHash,
-    signerAddress
-  ) => {
-    const ETHEREUM_V_VALUES = [0, 1, 27, 28];
-    const MIN_VALID_V_VALUE_FOR_SAFE_ECDSA = 27;
-    let signatureV = parseInt(signature.slice(-2), 16);
-    if (!ETHEREUM_V_VALUES.includes(signatureV)) {
-      throw new Error("Invalid signature");
-    }
-    if (signingMethod === "eth_sign") {
-      /*
-      The Safe's expected V value for ECDSA signature is:
-      - 27 or 28
-      - 31 or 32 if the message was signed with a EIP-191 prefix. Should be calculated as ECDSA V value + 4
-      Some wallets do that, some wallets don't, V > 30 is used by contracts to differentiate between
-      prefixed and non-prefixed messages. The only way to know if the message was signed with a
-      prefix is to check if the signer address is the same as the recovered address.
-
-      More info:
-      https://docs.safe.global/learn/signatures
-    */
-      if (signatureV < MIN_VALID_V_VALUE_FOR_SAFE_ECDSA) {
-        signatureV += MIN_VALID_V_VALUE_FOR_SAFE_ECDSA;
-      }
-      const adjustedSignature =
-        signature.slice(0, -2) + signatureV.toString(16);
-      const signatureHasPrefix = isTxHashSignedWithPrefix(
-        safeTxHash,
-        adjustedSignature,
-        signerAddress
-      );
-      if (signatureHasPrefix) {
-        signatureV += 4;
-      }
-    }
-    if (signingMethod === "eth_signTypedData") {
-      // Metamask with ledger returns V=0/1 here too, we need to adjust it to be ethereum's valid value (27 or 28)
-      if (signatureV < MIN_VALID_V_VALUE_FOR_SAFE_ECDSA) {
-        signatureV += MIN_VALID_V_VALUE_FOR_SAFE_ECDSA;
-      }
-    }
-    signature = signature.slice(0, -2) + signatureV.toString(16);
-    return signature;
-  };
-
   const request = async (request) => {
     const userOp = await signUserOp(request);
-
-    // delete userOp.verificationGasLimit;
-    // delete userOp.callGasLimit;
-    // delete userOp.preVerificationGas;
-
-    const gasData = await estimateUserOpGas(userOp);
-
-    // delete userOp.paymasterAndData;
-    userOp.verificationGasLimit = gasData.verificationGas;
-    userOp.callGasLimit = gasData.callGasLimit;
-    userOp.preVerificationGas = gasData.preVerificationGas;
-
     const result = await sendUserOp(userOp);
 
     return result;
-  };
-
-  const signMessageWithSafe = async (message) => {
-    request({
-      from: currentSafe,
-      to: currentAccount,
-      data: "0x5468697320697320612074657374206d657373616765",
-      value: "0x0",
-    });
   };
 
   const sendNftToVault = (nft) => {
@@ -1015,7 +919,7 @@ function SafeExample({ goBack }) {
                 <p className="mt-2 font-bold">{currentAccount}</p>
                 {accountCurrencyBalance && (
                   <p className="mt-2 font-bold">
-                    Balance: {getEthBalance(accountCurrencyBalance)} ETH
+                    Balance: {getMaticBalance(accountCurrencyBalance)} MATIC
                   </p>
                 )}
               </div>
@@ -1033,21 +937,13 @@ function SafeExample({ goBack }) {
                 <p className="mt-2 font-bold">{currentSafe}</p>
                 {safeCurrencyBalance && (
                   <p className="mt-2 font-bold">
-                    Balance: {getEthBalance(safeCurrencyBalance)} ETH
+                    Balance: {getMaticBalance(safeCurrencyBalance)} MATIC
                   </p>
                 )}
               </div>
             ) : (
               "Not logged in."
             )}
-            {currentSafe && !signMessageHash ? (
-              <button
-                className="mt-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
-                onClick={() => signMessageWithSafe("This is a test message")}
-              >
-                Sign Message w/ Safe
-              </button>
-            ) : null}
             {currentSafe && safeNftBalance ? (
               <p className="mt-2 font-bold break-all">
                 NFT: {JSON.stringify(getNft(safeNftBalance))}

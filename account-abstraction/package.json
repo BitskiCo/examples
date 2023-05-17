@@ -14,6 +14,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@account-abstraction/contracts": "^0.6.0",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@safe-global/protocol-kit": "^1.0.1",
