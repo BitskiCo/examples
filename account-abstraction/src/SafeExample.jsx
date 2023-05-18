@@ -408,9 +408,9 @@ function SafeExample({ goBack }) {
   const [accountNftBalance, setAccountNftBalance] = useState(null);
   const [safeNftBalance, setSafeNftBalance] = useState(null);
   const [provider, setProvider] = useState(null);
-  const [signMessageHash, setSignMessageHash] = useState(null);
   const [sendNftHash, setNftHash] = useState(null);
-  const [sendTokenHash, setTokenHash] = useState(null);
+  const [sendGasTokenHash, setGasTokenHash] = useState(null);
+  const [sendErc20TokenHash, setErc20TokenHash] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -558,7 +558,8 @@ function SafeExample({ goBack }) {
 
   const getBalanceForContractAddress = (balances, tokenAddress) => {
     return balances?.find(
-      ({ contractAddress }) => contractAddress === tokenAddress
+      ({ contractAddress }) =>
+        contractAddress.toLowerCase() === tokenAddress.toLowerCase()
     );
   };
 
@@ -712,10 +713,11 @@ function SafeExample({ goBack }) {
       nonce,
       initCode: "0x",
       callData,
-      callGasLimit: "0xecd0",
-      verificationGasLimit: "0xecd0",
-      preVerificationGas: "0xecd0",
-      paymasterAndData: "0x",
+      // callGasLimit: "0xecd0",
+      // verificationGasLimit: "0xecd0",
+      // preVerificationGas: "0xecd0",
+      paymasterAndData:
+        "0xc03aac639bb21233e0139381970328db8bceeb67fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c",
       signature:
         "0xaecc72634f6c02bc10ec820d21f6ae77cfa16f970b9ae2172133c4f445db47e559a347766e448f5ded21ce41fc2ca92490ee32db75df7508309c65604f4a73af1b",
     };
@@ -723,13 +725,16 @@ function SafeExample({ goBack }) {
     const gasData = await estimateUserOpGas(userOp);
 
     // Alchemy
-    userOp.verificationGasLimit = hexlify(
-      BigNumber.from(gasData.verificationGasLimit).mul(2)
-    );
-    userOp.preVerificationGas = hexlify(
-      BigNumber.from(gasData.preVerificationGas).mul(2)
-    );
-    userOp.callGasLimit = hexlify(BigNumber.from(gasData.callGasLimit).mul(2));
+    userOp.verificationGasLimit = gasData.verificationGasLimit;
+    userOp.preVerificationGas = gasData.preVerificationGas;
+    userOp.callGasLimit = gasData.callGasLimit;
+    // userOp.verificationGasLimit = hexlify(
+    //   BigNumber.from(gasData.verificationGasLimit).mul(2)
+    // );
+    // userOp.preVerificationGas = hexlify(
+    //   BigNumber.from(gasData.preVerificationGas).mul(2)
+    // );
+    // userOp.callGasLimit = hexlify(BigNumber.from(gasData.callGasLimit).mul(2));
 
     const { maxFeePerGas, maxPriorityFeePerGas } =
       await alchemyProvider.getFeeData();
@@ -851,13 +856,13 @@ function SafeExample({ goBack }) {
         alert(result);
       }
     } catch (e) {
-      if (e.error.message) {
-        alert(e.error.message);
+      if (e.error?.message ?? e.message) {
+        alert(e.error?.message ?? e.message);
       }
     }
   };
 
-  const sendTokenToVault = async () => {
+  const sendErc20TokenToVault = async () => {
     const buildTransactionData = () => {
       const abi = [
         {
@@ -885,7 +890,7 @@ function SafeExample({ goBack }) {
       // send 0.01 value of token
       return iface.encodeFunctionData("transfer", [
         currentAccount,
-        BigNumber.from("10000000000000000"),
+        BigNumber.from("30323659506473190"),
       ]);
     };
 
@@ -903,8 +908,29 @@ function SafeExample({ goBack }) {
         alert(result);
       }
     } catch (e) {
-      if (e.error.message) {
+      if (e.error?.message ?? e.message) {
         alert(e.error.message);
+      }
+    }
+  };
+
+  const sendGasTokenToVault = async () => {
+    const requestData = {
+      to: currentAccount,
+      from: currentSafe,
+      value: hexlify(BigNumber.from("49676340493526810")),
+      data: "0x",
+    };
+
+    try {
+      const result = await request(requestData);
+
+      if (result) {
+        alert(result);
+      }
+    } catch (e) {
+      if (e.error?.message ?? e.message) {
+        alert(e.error?.message ?? e.message);
       }
     }
   };
@@ -989,6 +1015,14 @@ function SafeExample({ goBack }) {
             ) : (
               "Not logged in."
             )}
+            {currentSafe && !sendGasTokenHash ? (
+              <button
+                className="mt-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
+                onClick={() => sendGasTokenToVault()}
+              >
+                Send MATIC to Vault
+              </button>
+            ) : null}
             {currentSafe && safeNftBalance ? (
               <p className="mt-2 font-bold break-all">
                 NFT: {JSON.stringify(getNft(safeNftBalance))}
@@ -997,7 +1031,7 @@ function SafeExample({ goBack }) {
             {currentSafe && !sendNftHash ? (
               <button
                 className="my-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
-                onClick={() => sendNftToVault(getNft(safeNftBalance))}
+                onClick={() => sendNftToVault()}
               >
                 Send NFT to Vault
               </button>
@@ -1007,10 +1041,10 @@ function SafeExample({ goBack }) {
                 ERC20: {JSON.stringify(getErc20(safeCurrencyBalance))}
               </p>
             ) : null}
-            {currentSafe && !sendTokenHash ? (
+            {currentSafe && !sendErc20TokenHash ? (
               <button
                 className="mt-4 inline-block cursor-pointer rounded-md bg-gray-800 px-4 py-3 text-sm font-semibold uppercase text-white transition duration-200 ease-in-out hover:bg-gray-900"
-                onClick={() => sendTokenToVault(getErc20(safeCurrencyBalance))}
+                onClick={() => sendErc20TokenToVault()}
               >
                 Send ERC20 to Vault
               </button>
