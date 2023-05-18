@@ -770,12 +770,14 @@ function SafeExample({ goBack }) {
   };
 
   const sendUserOp = async (userOp) => {
-    const opsTransaction = await stackupBundlerProvider.send(
-      "eth_sendUserOperation",
-      [userOp, ENTRYPOINT_CONTRACT]
-    );
-    // const opsTransaction = await alchemyProvider.send("eth_sendUserOperation", [userOp, ENTRYPOINT_CONTRACT]);
-    const result = await opsTransaction.wait();
+    // const result = await stackupBundlerProvider.send(
+    //   "eth_sendUserOperation",
+    //   [userOp, ENTRYPOINT_CONTRACT]
+    // );
+    const result = await alchemyProvider.send("eth_sendUserOperation", [
+      userOp,
+      ENTRYPOINT_CONTRACT,
+    ]);
 
     if (result && result.error && result.error.message) {
       throw new Error(result.error.message);
@@ -793,7 +795,7 @@ function SafeExample({ goBack }) {
     return result;
   };
 
-  const sendNftToVault = (nft) => {
+  const sendNftToVault = async (nft) => {
     const iface1155 = new Interface([
       {
         name: "safeTransferFrom",
@@ -842,15 +844,20 @@ function SafeExample({ goBack }) {
       nft
     );
 
-    request({
-      from: currentSafe,
-      to: ERC_1155_CONTRACT_ADDRESS,
-      data: erc1155TxnData,
-      value: "0x0",
-    });
+    try {
+      const result = await request(requestData);
+
+      if (result) {
+        alert(result);
+      }
+    } catch (e) {
+      if (e.error.message) {
+        alert(e.error.message);
+      }
+    }
   };
 
-  const sendTokenToVault = (currency) => {
+  const sendTokenToVault = async () => {
     const buildTransactionData = () => {
       const abi = [
         {
@@ -889,7 +896,17 @@ function SafeExample({ goBack }) {
       value: "0x0",
     };
 
-    request(requestData);
+    try {
+      const result = await request(requestData);
+
+      if (result) {
+        alert(result);
+      }
+    } catch (e) {
+      if (e.error.message) {
+        alert(e.error.message);
+      }
+    }
   };
 
   return (
